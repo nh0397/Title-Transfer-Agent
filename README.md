@@ -24,9 +24,16 @@ Attempting to handle more complex or larger documents just by throwing a larger 
 
 ### Backend Configuration
 
-1. Navigate to the backend directory.
+1. Navigate to the `backend/` directory.
 2. Install dependencies: `pip install -r requirements.txt`.
-3. Configure the `.env` file with your Groq API Key and desired model names.
+3. Create a `.env` file in the `backend/` directory and configure the environment variables:
+   ```env
+   GROQ_API_KEY=your_groq_api_key_here
+   GROQ_VISION_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
+   GROQ_TEXT_MODEL=llama-3.3-70b-versatile
+   USE_LOCAL_AI=false     # Set to true to bypass Groq and use local Ollama
+   OLLAMA_MODEL=gemma4    # The local model to use if USE_LOCAL_AI=true
+   ```
 4. Start the server: `python main.py`.
 
 ### Frontend Configuration
