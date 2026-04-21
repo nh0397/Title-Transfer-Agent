@@ -78,10 +78,9 @@ def fill_single_pdf(template_path: Path, field_data: dict, output_path: Path) ->
         for page in writer.pages:
             try:
                 writer.update_page_form_field_values(page, {target_key: str(value)})
-                filled += 1
-                break
             except Exception:
                 continue
+        filled += 1
 
     with open(output_path, "wb") as f:
         writer.write(f)
