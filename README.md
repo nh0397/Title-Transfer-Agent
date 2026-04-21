@@ -11,12 +11,17 @@ The system operates through a structured four-phase pipeline:
 3.  **PDF Generation**: Programmatically fills official HCD PDF templates (476.6G, 480.5, and 476.6) using the mapped data while preserving the original document structure and layout.
 4.  **Verification and Review**: Provides a web-based interface for users to preview the generated PDFs side-by-side with an editable data panel. This allows for manual corrections and instant re-generation of documents before final download.
 
-## Technology Stack
+## Technology Stack & Design Decisions
 
-- **Backend**: Python-based FastAPI server.
-- **AI Engine**: Groq LPU (Llama 3.2 Vision for document scanning and Llama 3.3 for intelligent data mapping).
-- **PDF Infrastructure**: PyMuPDF (fitz) for document rendering and pypdf for programmatic field population.
-- **Frontend**: React-based dashboard with a real-time agent activity log and interactive document reviewer.
+- **Backend (Python & FastAPI)**: Chosen for its native asynchronous capabilities, rich data science/AI ecosystem, and native support for fast I/O document processing. Python provides the best-in-class libraries (`pypdf` / `PyMuPDF`) for manipulating complex PDF AcroForms.
+- **Frontend (React)**: Selected for its component-based architecture, which makes building complex dynamic dashboards (like our side-by-side PDF preview and inline edit panel) straightforward.
+- **AI Engine (Local/Cloud Hybrid via Groq/Ollama)**: We utilize Llama Vision models (e.g., Llama 4 Scout/Llama 3.2 Vision) for extraction and text models for schema mapping. Groq was selected on the cloud side for its near-zero latency inference, which is critical for synchronous web requests. We included a fallback local pipeline (Ollama) to ensure the system can prioritize data privacy for sensitive PII when latency is less critical.
+- **PDF Infrastructure**: `PyMuPDF` is used for high-fidelity rendering of PDFs to images (vital for vision LLM accuracy), while `pypdf` is used to append AcroForm fields.
+
+### Scaling Limitation: The Size Approach
+
+Attempting to improve this system's accuracy or capability *solely* by scaling up the AI model size (e.g., swapping a 11B parameter model for a 405B parameter model) presents a critical limiting factor: **Latency vs. Context Efficiency**. 
+Large vision models are computationally expensive and slow to process high-resolution images. In a production environment handling thousands of transfers, pushing a massive model against a strict synchronous web request will lead to severe UI blocking, queue timeouts, and exorbitant compute costs per title. Furthermore, larger models often suffer from "context destruction" when reading dense, highly structured government tables, where a smaller, specifically fine-tuned OCR-focused vision model coupled with a deterministic rules-engine would scale much more efficiently and reliably.
 
 ## Installation and Setup
 

@@ -46,11 +46,14 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanation, just the JSON ob
 """
 
 MAPPING_PROMPT = """
-You are a California HCD forms specialist. Given the extracted data below, create a
-field mapping for three government forms.
+You are a California HCD forms specialist. Given the extracted title data and
+buyer/transaction details below, create a field mapping for three government forms.
 
-Extracted data:
+Extracted data (from the title):
 {extracted_data}
+
+Buyer and transaction details (provided by the user):
+{buyer_data}
 
 Map the data to these EXACT PDF field names. Return a JSON object with three keys:
 "hcd_476_6g", "hcd_480_5", and "hcd_476_6". Each key maps to a dict of
@@ -111,7 +114,8 @@ Rules:
 3. Today's date is {today}.
 4. For the Statement of Facts, write a brief statement: "Transfer of ownership of the above-described manufactured home."
 5. Use the registered owner name for printed name fields.
-6. Leave fields blank ("") if no data is available.
+6. If buyer information is provided, use it for any buyer/new-owner fields. If not, leave them blank.
+7. Leave fields blank ("") if no data is available.
 
 Return ONLY valid JSON. No markdown, no explanation.
 """

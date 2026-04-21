@@ -46,6 +46,7 @@ function App() {
   const [previewPage, setPreviewPage] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [buyerData, setBuyerData] = useState({ name: '', address: '', salePrice: '', date: '' });
   const fileInput = useRef(null);
   const logRef = useRef(null);
 
@@ -130,7 +131,7 @@ function App() {
       const res2 = await fetch(`${API}/api/map`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(result1.data),
+        body: JSON.stringify({ extracted_data: result1.data, buyer_data: buyerData }),
       });
       if (!res2.ok) throw new Error((await res2.json()).detail || 'Mapping failed');
       const result2 = await res2.json();
@@ -218,6 +219,7 @@ function App() {
     setElapsed(0);
     setEditMode(false);
     setPreviewPage(0);
+    setBuyerData({ name: '', address: '', salePrice: '', date: '' });
   };
 
   const getStepClass = (stepId) => {
@@ -272,6 +274,42 @@ function App() {
                 </>
               )}
             </div>
+            {file && phase === 0 && (
+              <div className="buyer-form" style={{ marginTop: '1.5rem' }}>
+                <div className="card-title">Buyer Information (Optional)</div>
+                <input 
+                  type="text" 
+                  className="edit-input" 
+                  style={{ marginBottom: '0.75rem' }} 
+                  placeholder="Buyer's Full Name" 
+                  value={buyerData.name} 
+                  onChange={(e) => setBuyerData({...buyerData, name: e.target.value})} 
+                />
+                <input 
+                  type="text" 
+                  className="edit-input" 
+                  style={{ marginBottom: '0.75rem' }} 
+                  placeholder="Buyer's Full Address" 
+                  value={buyerData.address} 
+                  onChange={(e) => setBuyerData({...buyerData, address: e.target.value})} 
+                />
+                <input 
+                  type="text" 
+                  className="edit-input" 
+                  style={{ marginBottom: '0.75rem' }} 
+                  placeholder="Sale Price (e.g. $15,000)" 
+                  value={buyerData.salePrice} 
+                  onChange={(e) => setBuyerData({...buyerData, salePrice: e.target.value})} 
+                />
+                <input 
+                  type="date" 
+                  className="edit-input" 
+                  style={{ marginBottom: '1rem' }} 
+                  value={buyerData.date} 
+                  onChange={(e) => setBuyerData({...buyerData, date: e.target.value})} 
+                />
+              </div>
+            )}
             {phase === 0 && (
               <button
                 className="btn btn-primary btn-full"

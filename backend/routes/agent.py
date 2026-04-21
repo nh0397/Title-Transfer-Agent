@@ -39,10 +39,17 @@ async def extract_data(file: UploadFile = File(...)):
 
 
 @router.post("/map")
-async def map_fields(extracted_data: dict):
-    """Takes the raw extracted data and asks the AI to map it to form fields."""
+async def map_fields(payload: dict):
+    """Takes the raw extracted data and asks the AI to map it to form fields. Optionally includes buyer_data."""
+    extracted_data = payload.get("extracted_data", payload) # fallback to just payload if directly sent
+    buyer_data = payload.get("buyer_data", None)
+    
+    # If the payload came without the wrapper (old frontend), 'is_valid_title' will be in the top level payload
+    if "is_valid_title" in payload and "extracted_data" not in payload:
+        extracted_data = payload
+
     try:
-        data = agent_service.map_data(extracted_data)
+        data = agent_service.map_data(extracted_data, buyer_data)
         return {"status": "success", "data": data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

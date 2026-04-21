@@ -43,14 +43,14 @@ class AgentService:
             return self._extract_local(file_path)
         return self._extract_cloud(file_path)
 
-    def map_data(self, extracted_data: dict) -> dict:
+    def map_data(self, extracted_data: dict, buyer_data: dict = None) -> dict:
         """
         Takes the raw extracted data and figures out which box on which
         government form each piece of information belongs to.
         """
         if self.use_local and OLLAMA_AVAILABLE:
-            return self._map_local(extracted_data)
-        return self._map_cloud(extracted_data)
+            return self._map_local(extracted_data, buyer_data)
+        return self._map_cloud(extracted_data, buyer_data)
 
     # ── Cloud Methods (Groq API) ──
 
@@ -73,11 +73,14 @@ class AgentService:
         )
         return self._parse_json(response.choices[0].message.content)
 
-    def _map_cloud(self, extracted_data: dict) -> dict:
+    def _map_cloud(self, extracted_data: dict, buyer_data: dict = None) -> dict:
         """Sends extracted data to Groq's cloud text model for mapping."""
         today = datetime.now().strftime("%m/%d/%Y")
+        buyer_str = json.dumps(buyer_data, indent=2) if buyer_data else "No additional buyer information provided."
         prompt = MAPPING_PROMPT.format(
-            extracted_data=json.dumps(extracted_data, indent=2), today=today
+            extracted_data=json.dumps(extracted_data, indent=2), 
+            buyer_data=buyer_str,
+            today=today
         )
 
         response = self.client.chat.completions.create(
@@ -105,11 +108,14 @@ class AgentService:
         )
         return self._parse_json(response["message"]["content"])
 
-    def _map_local(self, extracted_data: dict) -> dict:
+    def _map_local(self, extracted_data: dict, buyer_data: dict = None) -> dict:
         """Sends extracted data to local Ollama for field mapping."""
         today = datetime.now().strftime("%m/%d/%Y")
+        buyer_str = json.dumps(buyer_data, indent=2) if buyer_data else "No additional buyer information provided."
         prompt = MAPPING_PROMPT.format(
-            extracted_data=json.dumps(extracted_data, indent=2), today=today
+            extracted_data=json.dumps(extracted_data, indent=2), 
+            buyer_data=buyer_str,
+            today=today
         )
 
         response = ollama.chat(
