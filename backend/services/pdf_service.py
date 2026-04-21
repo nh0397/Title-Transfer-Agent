@@ -58,13 +58,26 @@ def fill_single_pdf(template_path: Path, field_data: dict, output_path: Path) ->
     writer = PdfWriter()
     writer.append(reader)  # Preserves AcroForm structure
 
+    # Pre-fetch actual PDF field names to allow fuzzy matching
+    actual_fields = {}
+    pdf_fields = reader.get_fields()
+    if pdf_fields:
+        for k in pdf_fields.keys():
+            normalized = k.replace(":", "").replace(" ", "").lower()
+            actual_fields[normalized] = k
+
     filled = 0
     for field_name, value in field_data.items():
         if not value:
             continue
+            
+        # Fuzzy match LLM key against the actual PDF form field
+        norm_key = str(field_name).replace(":", "").replace(" ", "").lower()
+        target_key = actual_fields.get(norm_key, field_name)
+
         for page in writer.pages:
             try:
-                writer.update_page_form_field_values(page, {field_name: str(value)})
+                writer.update_page_form_field_values(page, {target_key: str(value)})
                 filled += 1
                 break
             except Exception:

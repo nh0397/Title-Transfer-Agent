@@ -115,7 +115,8 @@ Rules:
 4. For the Statement of Facts, write a brief statement: "Transfer of ownership of the above-described manufactured home."
 5. Use the registered owner name for printed name fields.
 6. If buyer information is provided, use it for any buyer/new-owner fields. If not, leave them blank.
-7. Leave fields blank ("") if no data is available.
+7. DO NOT remove colons (`:`) or modify the field names in any way. The JSON keys MUST exactly match the dashed list above character-for-character.
+8. Leave fields blank ("") if no data is available.
 
 Return ONLY valid JSON. No markdown, no explanation.
 """
