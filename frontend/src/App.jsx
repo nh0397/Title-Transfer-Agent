@@ -277,37 +277,47 @@ function App() {
             {file && phase === 0 && (
               <div className="buyer-form" style={{ marginTop: '1.5rem' }}>
                 <div className="card-title">Buyer Information (Optional)</div>
-                <input 
-                  type="text" 
-                  className="edit-input" 
-                  style={{ marginBottom: '0.75rem' }} 
-                  placeholder="Buyer's Full Name" 
-                  value={buyerData.name} 
-                  onChange={(e) => setBuyerData({...buyerData, name: e.target.value})} 
-                />
-                <input 
-                  type="text" 
-                  className="edit-input" 
-                  style={{ marginBottom: '0.75rem' }} 
-                  placeholder="Buyer's Full Address" 
-                  value={buyerData.address} 
-                  onChange={(e) => setBuyerData({...buyerData, address: e.target.value})} 
-                />
-                <input 
-                  type="text" 
-                  className="edit-input" 
-                  style={{ marginBottom: '0.75rem' }} 
-                  placeholder="Sale Price (e.g. $15,000)" 
-                  value={buyerData.salePrice} 
-                  onChange={(e) => setBuyerData({...buyerData, salePrice: e.target.value})} 
-                />
-                <input 
-                  type="date" 
-                  className="edit-input" 
-                  style={{ marginBottom: '1rem' }} 
-                  value={buyerData.date} 
-                  onChange={(e) => setBuyerData({...buyerData, date: e.target.value})} 
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem', marginBottom: '1.5rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-light)', marginBottom: '0.25rem', display: 'block' }}>Buyer Full Name</label>
+                    <input 
+                      type="text" 
+                      className="edit-input" 
+                      placeholder="e.g. Jane Doe" 
+                      value={buyerData.name} 
+                      onChange={(e) => setBuyerData({...buyerData, name: e.target.value})} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-light)', marginBottom: '0.25rem', display: 'block' }}>New Mailing Address</label>
+                    <input 
+                      type="text" 
+                      className="edit-input" 
+                      placeholder="e.g. 123 Main St, Los Angeles, CA 90001" 
+                      value={buyerData.address} 
+                      onChange={(e) => setBuyerData({...buyerData, address: e.target.value})} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-light)', marginBottom: '0.25rem', display: 'block' }}>Sale Price</label>
+                    <input 
+                      type="text" 
+                      className="edit-input" 
+                      placeholder="e.g. $15,000" 
+                      value={buyerData.salePrice} 
+                      onChange={(e) => setBuyerData({...buyerData, salePrice: e.target.value})} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-light)', marginBottom: '0.25rem', display: 'block' }}>Date of Sale (Date Picker)</label>
+                    <input 
+                      type="date" 
+                      className="edit-input" 
+                      value={buyerData.date} 
+                      onChange={(e) => setBuyerData({...buyerData, date: e.target.value})} 
+                    />
+                  </div>
+                </div>
               </div>
             )}
             {phase === 0 && (
