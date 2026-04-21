@@ -1,21 +1,21 @@
 """
 Author: Naisarg H.
 File: services/pdf_service.py
-Description: This service handles the "physical" manipulation of PDF documents. 
-It performs two main tasks: converting PDF pages into images so the AI can 
-"see" them, and programmatically writing data into the interactive fields 
-of official government PDF templates.
+Description: This service does the hands-on work with PDF files. It converts
+PDF pages into pictures so the AI can read them, fills in the blank boxes on
+government forms with the extracted data, renders previews of the filled
+forms, and merges all completed forms into a single transfer packet.
 """
 import base64
 from pathlib import Path
 from pypdf import PdfReader, PdfWriter
 import fitz  # PyMuPDF
 
+
 def pdf_to_base64_images(pdf_path: str, max_pages: int = 1) -> list[str]:
     """
-    Takes a PDF file and turns its pages into images. 
-    This is necessary because the AI vision model needs to "see" the 
-    document as a picture to read it.
+    Turns a PDF page into an image so the AI vision model can read it.
+    Returns the image as a base64-encoded string.
     """
     doc = fitz.open(pdf_path)
     images = []
@@ -29,11 +29,11 @@ def pdf_to_base64_images(pdf_path: str, max_pages: int = 1) -> list[str]:
     doc.close()
     return images
 
+
 def render_pdf_preview(pdf_path: str) -> list[str]:
     """
-    Creates a clear picture of a filled-out PDF page.
-    This allows the user to see exactly what the final document 
-    looks like directly in the web browser.
+    Creates a picture of a filled PDF so the user can see exactly what
+    it looks like inside the browser without downloading it.
     """
     doc = fitz.open(pdf_path)
     images = []
@@ -45,18 +45,18 @@ def render_pdf_preview(pdf_path: str) -> list[str]:
     doc.close()
     return images
 
+
 def fill_single_pdf(template_path: Path, field_data: dict, output_path: Path) -> int:
     """
-    Takes one blank government form and fills it with specific information.
-    It carefully matches the names of the boxes in the PDF with the 
-    data provided by the AI.
+    Takes one blank government form and writes the extracted data into
+    the correct boxes. Returns how many boxes were successfully filled.
     """
     if not template_path.exists():
         return 0
-        
+
     reader = PdfReader(str(template_path))
     writer = PdfWriter()
-    writer.append(reader)  # Preserves AcroForm
+    writer.append(reader)  # Preserves AcroForm structure
 
     filled = 0
     for field_name, value in field_data.items():
@@ -75,12 +75,14 @@ def fill_single_pdf(template_path: Path, field_data: dict, output_path: Path) ->
 
     return filled
 
+
 def fill_all_hcd_templates(mapping: dict, templates_dir: Path, output_dir: Path) -> list[dict]:
     """
-    The main coordinator for PDF filling. 
-    It loops through the three different HCD forms (476.6G, 480.5, and 476.6)
-    and ensures each one is populated with the correct data.
+    Loops through all three HCD forms (476.6G, 480.5, 476.6) and fills
+    each one with the mapped data. Returns a list of what was generated.
     """
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     templates = {
         "hcd_476_6g": templates_dir / "hcd_476_6g.pdf",
         "hcd_480_5": templates_dir / "hcd_480_5.pdf",
@@ -103,3 +105,19 @@ def fill_all_hcd_templates(mapping: dict, templates_dir: Path, output_dir: Path)
         })
 
     return generated_files
+
+
+def merge_pdfs(pdf_paths: list[str], output_path: Path):
+    """
+    Combines all individual filled PDFs into one single document.
+    This creates the final transfer packet that can be printed or filed.
+    """
+    writer = PdfWriter()
+    for path in pdf_paths:
+        if Path(path).exists():
+            reader = PdfReader(path)
+            writer.append(reader)
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return str(output_path)

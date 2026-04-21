@@ -1,24 +1,19 @@
 """
 Author: Naisarg H.
 File: main.py
-Description: This is the primary entry point for the Title Transfer Agent backend. 
-It initializes the FastAPI framework, configures cross-origin resource sharing (CORS) 
-to allow the frontend to communicate with it, and wires up the modular routes 
-for the AI agent and the file management system.
+Description: This is the entry point of the backend server. It loads the
+environment variables, starts the FastAPI application, sets up CORS so the
+frontend can talk to it, and connects all the route modules together.
 """
 import os
 from dotenv import load_dotenv
 
-# MUST be called before importing routers
+# MUST be called before importing routers so env vars are available
 load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# Import routers
 from routes import agent, files
-
-load_dotenv()
 
 app = FastAPI(title="Harmony Title Transfer Agent API")
 
@@ -34,13 +29,15 @@ app.add_middleware(
 app.include_router(agent.router)
 app.include_router(files.router)
 
+
 @app.get("/")
 async def root():
     return {
         "status": "online",
         "service": "Harmony Title Transfer Agent",
-        "version": "1.0"
+        "version": "1.0",
     }
+
 
 if __name__ == "__main__":
     import uvicorn

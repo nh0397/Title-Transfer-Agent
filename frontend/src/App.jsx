@@ -1,8 +1,17 @@
+/**
+ * Author: Naisarg H.
+ * File: App.jsx
+ * Description: This is the main React component for the Title Transfer Agent
+ * dashboard. It handles file uploads, runs the three-phase AI pipeline
+ * (extract, map, generate), shows real-time logs, renders PDF previews
+ * with inline editing, and provides download options for individual forms
+ * and the full merged transfer packet.
+ */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Upload, FileText, Map, Settings, CheckCircle,
-  Brain, Download, Sparkles, AlertCircle,
-  Zap, Clock, RefreshCw, ChevronLeft, ChevronRight, Edit3, Save, Eye
+  Upload, FileText, CheckCircle,
+  Download, Sparkles, AlertCircle,
+  Zap, Clock, RefreshCw, ChevronLeft, ChevronRight, Edit3, Save, Eye, Package
 } from 'lucide-react';
 
 const API = 'http://localhost:8000';
@@ -55,7 +64,6 @@ function App() {
     return () => clearInterval(timer);
   }, [startTime, phase]);
 
-  // Set first form as active preview when previews arrive
   useEffect(() => {
     if (previews && !activePreview) {
       const firstKey = Object.keys(previews)[0];
@@ -65,23 +73,34 @@ function App() {
 
   const handleFile = (e) => {
     const f = e.target.files?.[0];
-    if (f) {
-      setFile(f);
-      setError(null);
-      setPhase(0);
-      setExtraction(null);
-      setMapping(null);
-      setEditableMapping(null);
-      setGenerated(null);
-      setPreviews(null);
-      setActivePreview(null);
-      setLogs([]);
-      setEditMode(false);
-      addLog(`Document loaded: ${f.name} (${(f.size / 1024).toFixed(0)} KB)`, 'success');
+    if (!f) return;
+
+    // Only allow PDF files
+    if (f.type !== 'application/pdf') {
+      setError('Invalid file type. Please upload a PDF document.');
+      addLog('Rejected non-PDF file', 'error');
+      setFile(null);
+      if (fileInput.current) fileInput.current.value = '';
+      return;
     }
+
+    setFile(f);
+    setError(null);
+    setPhase(0);
+    setExtraction(null);
+    setMapping(null);
+    setEditableMapping(null);
+    setGenerated(null);
+    setPreviews(null);
+    setActivePreview(null);
+    setLogs([]);
+    setEditMode(false);
+    setPreviewPage(0);
+    addLog(`Document loaded: ${f.name} (${(f.size / 1024).toFixed(0)} KB)`, 'success');
   };
 
   const runFullPipeline = async () => {
+    if (!file) return;
     setLoading(true);
     setError(null);
     setStartTime(Date.now());
@@ -95,8 +114,14 @@ function App() {
       const res1 = await fetch(`${API}/api/extract`, { method: 'POST', body: form });
       if (!res1.ok) throw new Error((await res1.json()).detail || 'Extraction failed');
       const result1 = await res1.json();
+
+      // Document validation — AI checks if it is actually a title
+      if (result1.data.is_valid_title === false) {
+        throw new Error(result1.data.validation_error || 'This does not appear to be a California Certificate of Title.');
+      }
+
       setExtraction(result1.data);
-      const fieldCount = Object.values(result1.data).filter(v => v).length;
+      const fieldCount = Object.values(result1.data).filter(v => v && v !== true && v !== null).length;
       addLog(`Extracted ${fieldCount} data fields from title`, 'success');
 
       setPhase(2);
@@ -132,7 +157,7 @@ function App() {
       setPhase(4);
 
       addLog('All 3 HCD forms generated successfully', 'success');
-      addLog('Review the previews below and edit if needed', 'info');
+      addLog('Transfer packet ready. Review the previews below.', 'info');
 
     } catch (e) {
       setError(e.message);
@@ -159,7 +184,7 @@ function App() {
       setMapping(JSON.parse(JSON.stringify(editableMapping)));
       setEditMode(false);
       setPreviewPage(0);
-      addLog('PDFs regenerated with your edits ✓', 'success');
+      addLog('PDFs regenerated with your edits', 'success');
     } catch (e) {
       addLog(`Error: ${e.message}`, 'error');
     } finally {
@@ -180,6 +205,7 @@ function App() {
   const reset = () => {
     setPhase(0);
     setFile(null);
+    if (fileInput.current) fileInput.current.value = '';
     setExtraction(null);
     setMapping(null);
     setEditableMapping(null);
@@ -246,8 +272,13 @@ function App() {
                 </>
               )}
             </div>
-            {file && phase === 0 && (
-              <button className="btn btn-primary btn-full" onClick={runFullPipeline}>
+            {phase === 0 && (
+              <button
+                className="btn btn-primary btn-full"
+                onClick={runFullPipeline}
+                disabled={!file || loading}
+                style={{ filter: !file ? 'grayscale(1) opacity(0.5)' : 'none' }}
+              >
                 <Zap size={16} /> Run Agent
               </button>
             )}
@@ -279,7 +310,7 @@ function App() {
         {/* Main */}
         <main className="main">
           {/* Welcome */}
-          {phase === 0 && !file && (
+          {phase === 0 && !file && !error && (
             <div className="card hero-card">
               <Sparkles size={48} style={{ color: 'var(--primary-light)', marginBottom: '1.5rem' }} />
               <h2 className="main-title">Title Transfer Agent</h2>
@@ -290,13 +321,24 @@ function App() {
             </div>
           )}
 
-          {phase === 0 && file && (
+          {phase === 0 && file && !error && (
             <div className="card hero-card">
               <FileText size={48} style={{ color: 'var(--success)', marginBottom: '1.5rem' }} />
               <h2 className="main-title">Ready to Process</h2>
               <p className="main-subtitle" style={{ maxWidth: 480, marginTop: '0.75rem' }}>
                 <strong>{file.name}</strong> loaded. Click <strong>"Run Agent"</strong> to start.
               </p>
+            </div>
+          )}
+
+          {/* Error card — shown at any phase */}
+          {error && (
+            <div className="card error-card">
+              <div className="error-header"><AlertCircle size={18} /><strong>Pipeline Error</strong></div>
+              <p className="error-text">{error}</p>
+              <button className="btn btn-ghost" onClick={reset} style={{ marginTop: '1rem' }}>
+                <RefreshCw size={14} /> Try Again
+              </button>
             </div>
           )}
 
@@ -319,26 +361,16 @@ function App() {
                 </div>
               </div>
 
-              {error && (
-                <div className="card error-card">
-                  <div className="error-header"><AlertCircle size={18} /><strong>Pipeline Error</strong></div>
-                  <p className="error-text">{error}</p>
-                  <button className="btn btn-ghost" onClick={reset} style={{ marginTop: '1rem' }}>
-                    <RefreshCw size={14} /> Try Again
-                  </button>
-                </div>
-              )}
-
               {/* Extracted Data */}
               {extraction && (
                 <div className="card">
                   <div className="card-title">Extracted Data</div>
                   <div className="data-grid">
                     {Object.entries(extraction).map(([key, value]) => (
-                      value && (
+                      value && key !== 'is_valid_title' && key !== 'validation_error' && (
                         <div key={key} className="data-item">
                           <div className="data-label">{key.replace(/_/g, ' ')}</div>
-                          <div className="data-value">{value}</div>
+                          <div className="data-value">{String(value)}</div>
                         </div>
                       )
                     ))}
@@ -346,7 +378,7 @@ function App() {
                 </div>
               )}
 
-              {/* ── PDF Preview & Edit Section ── */}
+              {/* PDF Preview & Edit Section */}
               {previews && phase === 4 && (
                 <div className="card preview-section">
                   <div className="preview-header">
@@ -390,7 +422,6 @@ function App() {
 
                   {/* Preview + Edit split */}
                   <div className={editMode ? 'preview-split' : ''}>
-                    {/* PDF Image Preview */}
                     <div className="preview-viewer">
                       {activePreview && previews[activePreview] && (
                         <>
@@ -447,23 +478,36 @@ function App() {
                     )}
                   </div>
 
-                  {/* Download buttons */}
-                  <div className="download-bar">
-                    {generated && generated.map((f) => {
-                      const label = FORM_LABELS[f.form] || { name: f.form, desc: '' };
-                      return (
-                        <a
-                          key={f.form}
-                          className="btn btn-ghost"
-                          href={`${API}/api/download/${f.form}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ textDecoration: 'none' }}
-                        >
-                          <Download size={14} /> {label.name}
-                        </a>
-                      );
-                    })}
+                  {/* Download section */}
+                  <div className="download-bar" style={{ flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* Full Packet download */}
+                    <a
+                      className="btn btn-primary btn-full"
+                      href={`${API}/api/download/full_packet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ textDecoration: 'none', padding: '0.75rem' }}
+                    >
+                      <Package size={16} /> Download Full Transfer Packet
+                    </a>
+                    {/* Individual form downloads */}
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {generated && generated.map((f) => {
+                        const label = FORM_LABELS[f.form] || { name: f.form, desc: '' };
+                        return (
+                          <a
+                            key={f.form}
+                            className="btn btn-ghost"
+                            href={`${API}/api/download/${f.form}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ textDecoration: 'none', flex: 1 }}
+                          >
+                            <FileText size={14} /> {label.name}
+                          </a>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}

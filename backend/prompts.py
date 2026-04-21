@@ -1,10 +1,28 @@
+"""
+Author: Naisarg H.
+File: prompts.py
+Description: This file stores the instruction sets (prompts) that tell the AI
+what to look for in a document and how to organize the data it finds.
+There are two prompts: one for reading the title, one for mapping data to forms.
+"""
+
 EXTRACTION_PROMPT = """
 You are an expert document analyst for California Manufactured Home titles.
-Analyze this document and extract EVERY piece of information you can find.
 
-Return a JSON object with EXACTLY these keys (use empty string "" if not found):
+CRITICAL FIRST STEP - DOCUMENT VALIDATION:
+Before extracting anything, verify this is a valid California Certificate of Title
+for a manufactured home. Look for keywords like "Department of Housing and Community
+Development", "Certificate of Title", "Decal Number", or "Title Number".
+
+If this is NOT a California Title (e.g. a resume, invoice, random document), return:
+{"is_valid_title": false, "validation_error": "I appreciate the enthusiasm, but I only work with California Certificates of Title. Please upload the correct document and we will get right to it!"}
+
+If this IS a valid title, extract EVERY piece of information and return a JSON object
+with EXACTLY these keys (use empty string "" if not found):
 
 {
+  "is_valid_title": true,
+  "validation_error": null,
   "manufacturer_name": "",
   "manufacturer_id": "",
   "trade_name": "",
